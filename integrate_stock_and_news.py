@@ -3,7 +3,6 @@ Integration script to merge sentiment-scored news (finviz_news_scored)
 with hourly financial data (stock_prices_pct_chg)
 and produce a unified table integrated_stock_news.
 
-Author: PK
 """
 
 import sqlite3
