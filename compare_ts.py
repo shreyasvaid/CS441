@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 # variables
 PATH = "stock_sentiment_data_time.csv" # modified with compare_ts.py
-TICKER = "NVDA"
-TEST_DAYS = 20  # last 20 trading days for testing
+TICKER = "AAPL"
+TEST_SPLIT = 0.1  # last 10% of trading days for testing
 HIST_DAYS = 183  # how many days before test set to include in plot
 
 # prep data
@@ -20,17 +20,18 @@ df_close_daily = df_close_daily.set_index("datetime").sort_index()
 
 ts = df_close_daily["Close"]
 ts_log = np.log(ts)
+test_days = int(len(ts) * TEST_SPLIT)
 
 sent_cols = ["num_articles", "avg_sentiment"]#, "total_sentiment", "max_sentiment", "min_sentiment"]
 exog = df_close_daily.get(sent_cols, pd.DataFrame(index=df_close_daily.index))
 exog = exog.fillna(0)
 
 # Train/Test split
-train_ts = ts_log.iloc[:-TEST_DAYS]
-test_ts = ts_log.iloc[-TEST_DAYS:]
+train_ts = ts_log.iloc[:-test_days]
+test_ts = ts_log.iloc[-test_days:]
 
-train_exog = exog.iloc[:-TEST_DAYS]
-test_exog = exog.iloc[-TEST_DAYS:]
+train_exog = exog.iloc[:-test_days]
+test_exog = exog.iloc[-test_days:]
 
 # find best (p,d,q)
 auto_model_no_exog = pm.auto_arima(train_ts, 
@@ -68,8 +69,8 @@ model_with_exog = SARIMAX(train_ts,
 fit_with_exog = model_with_exog.fit(disp=False)
 
 # forecast test period
-forecast_no_exog = np.exp(fit_no_exog.get_forecast(steps=TEST_DAYS).predicted_mean)
-forecast_with_exog = np.exp(fit_with_exog.get_forecast(steps=TEST_DAYS, exog=test_exog).predicted_mean)
+forecast_no_exog = np.exp(fit_no_exog.get_forecast(steps=test_days).predicted_mean)
+forecast_with_exog = np.exp(fit_with_exog.get_forecast(steps=test_days, exog=test_exog).predicted_mean)
 
 # Convert actual test data back from log
 actual = np.exp(test_ts)
@@ -102,7 +103,7 @@ else:
 print("\nDecision:", winner)
 
 # Plot actual vs predictions
-plot_start = max(0, len(ts) - TEST_DAYS - HIST_DAYS)
+plot_start = max(0, len(ts) - test_days - HIST_DAYS)
 plot_series = np.exp(ts_log.iloc[plot_start:])  # back-transform from log
 
 # Forecast test period
