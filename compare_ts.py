@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 import pmdarima as pm
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 
 # variables
@@ -80,13 +80,12 @@ forecast_with_exog.index = actual.index
 # Compute error metrics
 def compute_errors(pred, actual):
     mse = mean_squared_error(actual, pred)
-    rmse = np.sqrt(mse) 
+    rmse = np.sqrt(mse)
     mae = mean_absolute_error(actual, pred)
-    return {
-        "MAE": mae,
-        "MSE": mse,
-        "RMSE": rmse
-    }
+    mape = np.mean(np.abs((actual - pred) / actual)) * 100
+    r2 = r2_score(actual, pred)
+    return {"MAE": mae, "MSE": mse, "RMSE": rmse, "MAPE": mape, "R2": r2}
+
 
 errors_no_exog = compute_errors(forecast_no_exog, actual)
 errors_with_exog = compute_errors(forecast_with_exog, actual)
@@ -95,11 +94,7 @@ print("\nModel Comparison on Test Set:")
 print("Without Sentiment:", errors_no_exog)
 print("With Sentiment:   ", errors_with_exog)
 
-if errors_with_exog["RMSE"] < errors_no_exog["RMSE"]:
-    winner = "Model WITH sentiment is better!"
-else:
-    winner = "Model WITHOUT sentiment is better!"
-
+winner = "Model WITH Sentiment" if errors_with_exog["RMSE"] < errors_no_exog["RMSE"] else "ModelWITHOUT Sentiment"
 print("\nDecision:", winner)
 
 # Plot actual vs predictions
