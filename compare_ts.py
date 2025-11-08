@@ -22,7 +22,7 @@ ts = df_close_daily["Close"]
 ts_log = np.log(ts)
 test_days = int(len(ts) * TEST_SPLIT)
 
-sent_cols = ["num_articles", "avg_sentiment"]#, "total_sentiment", "max_sentiment", "min_sentiment"]
+sent_cols = ["num_articles", "avg_sentiment", "total_sentiment"]#, "max_sentiment", "min_sentiment"]
 exog = df_close_daily.get(sent_cols, pd.DataFrame(index=df_close_daily.index))
 exog = exog.fillna(0)
 
