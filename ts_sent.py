@@ -17,7 +17,7 @@ df_ticker = df[df["ticker"] == TICKER].copy().sort_values("datetime")
 df_ticker["time"] = df_ticker["datetime"].dt.time
 df_close_daily = df_ticker[df_ticker["time"] == pd.to_datetime("15:30", format="%H:%M").time()].copy()
 
-sent_cols = ["num_articles", "avg_sentiment", "total_sentiment", "max_sentiment", "min_sentiment"]
+sent_cols = ["num_articles", "avg_sentiment", "total_sentiment"]#, "max_sentiment", "min_sentiment"]
 for col in sent_cols:
     if col not in df_close_daily.columns:
         df_close_daily[col] = 0
