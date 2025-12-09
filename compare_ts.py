@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 # variables
 PATH = "stock_sentiment_data_time.csv" # modified with compare_ts.py
 TICKER = "AAPL"
-TEST_SPLIT = 0.1  # last 10% of trading days for testing
-HIST_DAYS = 183  # how many days before test set to include in plot
+TEST_SPLIT = 0.05  # last 5% of trading days for testing
+HIST_DAYS = 90  # how many days before test set to include in plot
 
 # prep data
-df = pd.read_csv(PATH, parse_dates=["datetime"])
+df = pd.read_csv(PATH, parse_dates=["date", "datetime"])
 df_ticker = df[df["ticker"] == TICKER].copy().sort_values("datetime")
 df_ticker["time"] = df_ticker["datetime"].dt.time
 df_close_daily = df_ticker[df_ticker["time"] == pd.to_datetime("15:30", format="%H:%M").time()].copy()
@@ -94,7 +94,7 @@ print("\nModel Comparison on Test Set:")
 print("Without Sentiment:", errors_no_exog)
 print("With Sentiment:   ", errors_with_exog)
 
-winner = "Model WITH Sentiment" if errors_with_exog["RMSE"] < errors_no_exog["RMSE"] else "ModelWITHOUT Sentiment"
+winner = "Model WITH Sentiment" if errors_with_exog["RMSE"] < errors_no_exog["RMSE"] else "Model WITHOUT Sentiment"
 print("\nDecision:", winner)
 
 # Plot actual vs predictions
