@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import sqlite3
 import yfinance as yf
 import pandas as pd
-import numpy as np
 
 TICKERS = [
     # Technology
@@ -122,85 +121,6 @@ def get_long_history(
     return df
 
 
-import numpy as np  # make sure this is imported
-
-def create_pct_change_table(db_path=DB_PATH):
-    with sqlite3.connect(db_path) as conn:
-        conn.row_factory = sqlite3.Row
-
-        df = pd.read_sql_query("SELECT * FROM stock_prices", conn)
-
-        orig_time = df["Time"].astype(str)
-
-        df["Date"] = pd.to_datetime(df["Date"], format="%Y-%m-%d", errors="coerce")
-        parsed_time = pd.to_datetime(df["Time"], errors="coerce")
-        if parsed_time.notna().any():
-            df["Time"] = parsed_time.dt.strftime("%H:%M:%S")
-            df.loc[df["Time"].isna(), "Time"] = orig_time.loc[df["Time"].isna()]
-        else:
-            df["Time"] = orig_time
-
-        df = df.reset_index(drop=True)
-
-        # Sort by Ticker + Date + Time
-        df = df.sort_values(["Ticker", "Date", "Time"], kind="mergesort").reset_index(drop=True)
-
-        df["Pct_Change_Hourly"] = df.groupby(["Ticker", df["Date"].dt.date])["Close"].transform(lambda s: s.pct_change() * 100)
-
-        df["Pct_Change_Daily"] = np.nan
-
-        close_330 = df["Time"] == "15:30:00"
-        close_rows = df[close_330].copy()
-
-        if not close_rows.empty:
-            close_rows = close_rows.sort_values(["Ticker", "Date"]).reset_index()
-            close_rows["Pct_Change_Daily"] = close_rows.groupby("Ticker")["Close"].transform(lambda s: s.pct_change() * 100)
-            df.loc[close_rows["index"], "Pct_Change_Daily"] = close_rows["Pct_Change_Daily"].values
-
-        df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
-        df["Time"] = df["Time"].astype(str)
-
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS stock_prices_pct_chg (
-                Date              TEXT NOT NULL,
-                Time              TEXT NOT NULL,
-                Ticker            TEXT NOT NULL,
-                Open              REAL,
-                High              REAL,
-                Low               REAL,
-                Close             REAL,
-                Adj_Close         REAL,
-                Volume            INTEGER,
-                Dividends         REAL,
-                Stock_Splits      REAL,
-                Pct_Change_Hourly REAL,
-                Pct_Change_Daily  REAL,
-                UNIQUE(Date, Time, Ticker)
-            )
-        """)
-
-        conn.execute("DELETE FROM stock_prices_pct_chg")
-
-        insert_sql = """
-            INSERT OR REPLACE INTO stock_prices_pct_chg
-            (Date, Time, Ticker, Open, High, Low, Close, Adj_Close,
-             Volume, Dividends, Stock_Splits, Pct_Change_Hourly, Pct_Change_Daily)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """
-
-        rows = list(df[[
-            "Date","Time","Ticker","Open","High","Low","Close","Adj_Close",
-            "Volume","Dividends","Stock_Splits","Pct_Change_Hourly","Pct_Change_Daily"
-        ]].itertuples(index=False, name=None))
-
-        conn.executemany(insert_sql, rows)
-        conn.commit()
-        print(f"Inserted {len(rows)} rows into stock_prices_pct_chg")
-
-        count = conn.execute("SELECT COUNT(*) FROM stock_prices_pct_chg").fetchone()[0]
-        print("Total rows in stock_prices_pct_chg:", count)
-
-
 def ensure_schema(conn: sqlite3.Connection):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS stock_prices (
@@ -250,8 +170,6 @@ def main():
     with sqlite3.connect(DB_PATH) as conn:
         count = conn.execute("SELECT COUNT(*) FROM stock_prices").fetchone()[0]
         print("Total rows in DB:", count)
-
-    create_pct_change_table(DB_PATH)
 
 
 if __name__ == "__main__":
